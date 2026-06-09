@@ -1,0 +1,98 @@
+# YTKraken — Python / PySide6 / PyInstaller project
+
+# Python bytecode and caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+.venv/
+venv/
+env/
+ENV/
+
+# Packaging / build artifacts
+build/
+dist/
+*.egg-info/
+.eggs/
+pip-wheel-metadata/
+*.whl
+
+# PyInstaller temporary files
+*.manifest
+*.pyz
+*.pkg
+
+# Keep PyInstaller spec files tracked.
+# Do NOT ignore *.spec if you want GitHub users to build the app.
+
+# Local app/runtime data
+*.log
+logs/
+tmp/
+temp/
+.cache/
+cache/
+settings.json
+config.json
+user_settings.json
+themes/custom.json
+
+# Downloaded or converted media output
+downloads/
+Downloads/
+output/
+converted/
+*.mp3
+*.ogg
+*.aac
+*.wav
+*.wma
+*.mp4
+*.mkv
+*.mov
+*.avi
+*.webm
+*.part
+*.ytdl
+*.ytdl.tmp
+
+# Local desktop launcher copies
+*.desktop
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE/editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Linux / KDE local metadata
+.directory
+
+# Archives and release bundles
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.7z
+*.rar
+
+# Credentials / cookies / private data
+cookies.txt
+*.cookies
+*.env
+.env
+.env.*
+secrets.*
