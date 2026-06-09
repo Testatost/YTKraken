@@ -1,54 +1,72 @@
 # -*- mode: python ; coding: utf-8 -*-
-# PyInstaller spec for Linux / Fedora KDE Plasma.
-# Build from the project root with:
-#   pyinstaller --clean --noconfirm main.spec
+# PyInstaller spec for Windows.
 #
-# ffmpeg/ffprobe are not bundled here. Install them system-wide on Fedora:
-#   sudo dnf install ffmpeg
+# Build from the project root with:
+#   pyinstaller --clean --noconfirm main_windows.spec
+#
+# The output executable will be:
+#   dist\YTKraken.exe
+#
+# Notes:
+# - Use an .ico file for the Windows executable icon.
+# - ffmpeg/ffprobe are only bundled if they exist under:
+#     tools\ffmpeg\bin\ffmpeg.exe
+#     tools\ffmpeg\bin\ffprobe.exe
+#   Otherwise, ffmpeg must be installed system-wide and available in PATH.
 
-from PyInstaller.utils.hooks import collect_data_files, collect_submodules, copy_metadata
-import os
+from pathlib import Path
 
-project_root = os.path.abspath('.')
+from PyInstaller.utils.hooks import (
+    collect_data_files,
+    collect_dynamic_libs,
+    collect_submodules,
+    copy_metadata,
+)
+
+project_root = Path.cwd()
+app_name = "YTKraken"
 
 icon_candidates = [
-    os.path.join(project_root, 'icon.png'),
-    os.path.join(project_root, 'icon.ico'),
-    os.path.join(project_root, 'app', 'assets', 'icons', 'app.png'),
+    project_root / "assets" / "icon.ico",
+    project_root / "app" / "assets" / "icons" / "app.ico",
+    project_root / "icon.ico",
 ]
-icon_file = next((path for path in icon_candidates if os.path.exists(path)), None)
+
+icon_file = next((str(path) for path in icon_candidates if path.exists()), None)
+
+version_file = project_root / "version_info.txt"
+version_arg = str(version_file) if version_file.exists() else None
 
 hiddenimports = []
 
 # Include the full modular app package.
-hiddenimports += collect_submodules('app') + collect_submodules('app.translation')
+hiddenimports += collect_submodules("app")
+hiddenimports += collect_submodules("app.translation")
 
-# Explicitly include every translation file. This avoids runtime errors such as:
-# ModuleNotFoundError: No module named 'app.translation.de'
-translation_dir = os.path.join(project_root, 'app', 'translation')
-if os.path.isdir(translation_dir):
-    for filename in os.listdir(translation_dir):
-        name, ext = os.path.splitext(filename)
-        if ext == '.py' and name != '__init__':
-            hiddenimports.append(f'app.translation.{name}')
+# Explicitly include every translation module.
+translation_dir = project_root / "app" / "translation"
+if translation_dir.is_dir():
+    for path in translation_dir.glob("*.py"):
+        if path.stem != "__init__":
+            hiddenimports.append(f"app.translation.{path.stem}")
 
-# yt-dlp loads extractors/postprocessors dynamically.
-hiddenimports += collect_submodules('yt_dlp')
+# yt-dlp loads extractors and postprocessors dynamically.
+hiddenimports += collect_submodules("yt_dlp")
 hiddenimports += [
-    'yt_dlp.postprocessor.ffmpeg',
-    'yt_dlp.utils',
+    "yt_dlp.postprocessor.ffmpeg",
+    "yt_dlp.utils",
 ]
 
 # Optional yt-dlp/default dependencies. They are included only when installed.
 for package in (
-    'certifi',
-    'requests',
-    'urllib3',
-    'websockets',
-    'mutagen',
-    'brotli',
-    'brotlicffi',
-    'Cryptodome',
+    "certifi",
+    "requests",
+    "urllib3",
+    "websockets",
+    "mutagen",
+    "brotli",
+    "brotlicffi",
+    "Cryptodome",
 ):
     try:
         hiddenimports += collect_submodules(package)
@@ -60,24 +78,29 @@ hiddenimports = list(dict.fromkeys(hiddenimports))
 
 datas = []
 
-assets_dir = os.path.join(project_root, 'app', 'assets')
-if os.path.isdir(assets_dir):
-    datas.append((assets_dir, 'app/assets'))
+# Application assets.
+for assets_dir in (
+    project_root / "assets",
+    project_root / "app" / "assets",
+):
+    if assets_dir.is_dir():
+        datas.append((str(assets_dir), str(assets_dir.relative_to(project_root))))
 
-# Keep translation .py files as data as well. The hiddenimports above are the
-# important part for importing, this is extra safety for inspection/debugging.
-if os.path.isdir(translation_dir):
-    datas.append((translation_dir, 'app/translation'))
+# Keep translation .py files as data as well. Hidden imports above are what
+# make imports work; this is additional safety for inspection/debugging.
+if translation_dir.is_dir():
+    datas.append((str(translation_dir), "app/translation"))
 
+# Package metadata and runtime data.
 for package in (
-    'yt-dlp',
-    'yt_dlp',
-    'certifi',
-    'requests',
-    'urllib3',
-    'websockets',
-    'mutagen',
-    'PySide6',
+    "yt-dlp",
+    "yt_dlp",
+    "certifi",
+    "requests",
+    "urllib3",
+    "websockets",
+    "mutagen",
+    "PySide6",
 ):
     try:
         datas += copy_metadata(package)
@@ -88,22 +111,34 @@ for package in (
     except Exception:
         pass
 
-if icon_file and not (assets_dir and icon_file.startswith(assets_dir)):
-    datas.append((icon_file, '.'))
-
 binaries = []
 
+# PySide6 DLLs and plugins.
+try:
+    binaries += collect_dynamic_libs("PySide6")
+except Exception:
+    pass
+
+# Optional bundled ffmpeg/ffprobe.
+# Recommended project layout:
+#   tools/ffmpeg/bin/ffmpeg.exe
+#   tools/ffmpeg/bin/ffprobe.exe
+ffmpeg_bin_dir = project_root / "tools" / "ffmpeg" / "bin"
+for exe_name in ("ffmpeg.exe", "ffprobe.exe"):
+    exe_path = ffmpeg_bin_dir / exe_name
+    if exe_path.exists():
+        binaries.append((str(exe_path), "."))
+
 excludes = [
-    'tkinter',
-    'unittest',
-    'pytest',
-    'IPython',
+    "tkinter",
+    "unittest",
+    "pytest",
+    "IPython",
 ]
 
-
 a = Analysis(
-    ['main.py'],
-    pathex=[project_root],
+    ["main.py"],
+    pathex=[str(project_root)],
     binaries=binaries,
     datas=datas,
     hiddenimports=hiddenimports,
@@ -114,6 +149,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+
 pyz = PYZ(a.pure)
 
 exe = EXE(
@@ -122,7 +158,7 @@ exe = EXE(
     a.binaries,
     a.datas,
     [],
-    name='YTKraken',
+    name=app_name,
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -136,4 +172,5 @@ exe = EXE(
     codesign_identity=None,
     entitlements_file=None,
     icon=icon_file,
+    version=version_arg,
 )
