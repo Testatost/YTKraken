@@ -1,4 +1,4 @@
-# yt-dlp GUI
+# YTKraken
 
 A modern desktop GUI for downloading and converting video and audio with [`yt-dlp`](https://github.com/yt-dlp/yt-dlp), `FFmpeg`, and `PySide6`.
 
